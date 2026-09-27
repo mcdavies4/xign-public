@@ -50,7 +50,7 @@ export default function SignPage() {
       .sign-wrap {
         max-width: 480px;
         margin: 0 auto;
-        padding: 32px 16px 48px;
+        padding: max(32px, env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom));
         font-family: system-ui, -apple-system, sans-serif;
       }
       .sign-wrap h1 { font-size: 20px; margin: 0 0 6px; }

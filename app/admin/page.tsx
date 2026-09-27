@@ -147,7 +147,7 @@ export default function AdminPage() {
           overflow-x: hidden;
           max-width: 720px;
           margin: 0 auto;
-          padding: 20px 16px 60px;
+          padding: max(20px, env(safe-area-inset-top)) 16px calc(60px + env(safe-area-inset-bottom));
           font-family: system-ui, -apple-system, sans-serif;
         }
         .top-row {
@@ -241,8 +241,41 @@ export default function AdminPage() {
         thead tr { border-bottom: 1px solid #ddd; }
         tbody tr { border-bottom: 1px solid #eee; }
         tbody tr:last-child { border-bottom: none; }
+        @media (max-width: 640px) {
+          .table-scroll { overflow-x: visible; border: none; }
+          table { min-width: 0; }
+          thead { display: none; }
+          tbody tr {
+            display: block;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+          }
+          tbody tr:last-child { margin-bottom: 0; }
+          td {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 6px 0;
+            border-bottom: 1px dashed #f0f0f0;
+          }
+          td:last-child { border-bottom: none; }
+          td::before {
+            content: attr(data-label);
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            flex: 0 0 auto;
+          }
+          td[data-label=""]::before { display: none; }
+          .empty-cell { display: block !important; text-align: center; }
+          .row-actions { justify-content: flex-end; }
+        }
         .sig-cell { display: flex; align-items: center; gap: 10px; }
         .sig-cell img { height: 36px; max-width: 90px; object-fit: contain; background: #fff; border: 1px solid #eee; border-radius: 4px; }
+        .empty-cell { text-align: center; color: #999; padding: 24px; }
         .status-pill {
           display: inline-block;
           padding: 2px 8px;
@@ -388,11 +421,11 @@ export default function AdminPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.signer_name || '(unnamed)'}</td>
-                <td>
+                <td data-label="Name">{r.signer_name || '(unnamed)'}</td>
+                <td data-label="Status">
                   <span className={`status-pill ${r.status}`}>{r.status}</span>
                 </td>
-                <td>
+                <td data-label="Signature">
                   {r.signature_url ? (
                     <div className="sig-cell">
                       <img src={r.signature_url} alt="" onClick={() => setPreviewUrl(r.signature_url)} />
@@ -404,7 +437,7 @@ export default function AdminPage() {
                     '-'
                   )}
                 </td>
-                <td>
+                <td data-label="">
                   <div className="row-actions">
                     {r.status === 'pending' && r.signer_email && (
                       <button
@@ -431,7 +464,7 @@ export default function AdminPage() {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                <td colSpan={4} className="empty-cell">
                   No requests yet
                 </td>
               </tr>
