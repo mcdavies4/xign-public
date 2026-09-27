@@ -30,6 +30,9 @@ export default function AdminPage() {
   const [displayName, setDisplayName] = useState('');
   const [displayNameSaved, setDisplayNameSaved] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
+  const [rowMsg, setRowMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const load = async () => {
     const {
@@ -109,6 +112,29 @@ export default function AdminPage() {
     } catch {
       // clipboard API unavailable — link is still shown and tappable
     }
+  };
+
+  const deleteRequest = async (id: string) => {
+    if (!confirm('Delete this request? This cannot be undone.')) return;
+    setRowBusy(id);
+    const res = await fetch(`/api/signatures/${id}`, { method: 'DELETE' });
+    setRowBusy(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setRowMsg({ id, text: data.error || 'Failed to delete', ok: false });
+      return;
+    }
+    load();
+  };
+
+  const resendEmail = async (id: string) => {
+    setRowBusy(id);
+    setRowMsg(null);
+    const res = await fetch(`/api/signatures/${id}`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setRowBusy(null);
+    setRowMsg({ id, text: res.ok ? 'Email resent' : data.error || 'Failed to resend', ok: res.ok });
+    setTimeout(() => setRowMsg(null), 3000);
   };
 
   return (
@@ -240,6 +266,40 @@ export default function AdminPage() {
           font-size: 14px;
         }
         .settings-hint { font-size: 12px; color: #999; margin-top: 6px; }
+        .stats-row { display: flex; gap: 16px; margin-bottom: 14px; font-size: 13px; color: #666; }
+        .row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .row-btn {
+          padding: 5px 10px;
+          font-size: 12px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          background: #fff;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .row-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .row-btn.danger { border-color: #f0c0c0; color: #a30000; }
+        .row-msg { font-size: 12px; }
+        .row-msg.ok { color: #1a7a1a; }
+        .row-msg.err { color: #a30000; }
+        .sig-cell img { cursor: zoom-in; }
+        .preview-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 50;
+          padding: 20px;
+        }
+        .preview-overlay img {
+          max-width: 100%;
+          max-height: 80vh;
+          background: #fff;
+          border-radius: 8px;
+          padding: 20px;
+        }
       `}</style>
 
       <div className="top-row">
@@ -266,7 +326,13 @@ export default function AdminPage() {
         <p className="settings-hint">Shows on the signing page as "Requested by ...". Leave blank to hide it.</p>
       </div>
 
-      <h1 style={{ fontSize: 18, color: '#555', margin: '0 0 12px' }}>Your signature requests</h1>
+      <h1 style={{ fontSize: 18, color: '#555', margin: '0 0 8px' }}>Your signature requests</h1>
+
+      <div className="stats-row">
+        <span>{rows.length} total</span>
+        <span>{rows.filter((r) => r.status === 'signed').length} signed</span>
+        <span>{rows.filter((r) => r.status === 'pending').length} pending</span>
+      </div>
 
       <div className="form-row">
         <input
@@ -305,6 +371,7 @@ export default function AdminPage() {
               <th>Name</th>
               <th>Status</th>
               <th>Signature</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -317,7 +384,7 @@ export default function AdminPage() {
                 <td>
                   {r.signature_url ? (
                     <div className="sig-cell">
-                      <img src={r.signature_url} alt="" />
+                      <img src={r.signature_url} alt="" onClick={() => setPreviewUrl(r.signature_url)} />
                       <a href={r.signature_url} download>
                         Download
                       </a>
@@ -326,11 +393,34 @@ export default function AdminPage() {
                     '-'
                   )}
                 </td>
+                <td>
+                  <div className="row-actions">
+                    {r.status === 'pending' && r.signer_email && (
+                      <button
+                        className="row-btn"
+                        disabled={rowBusy === r.id}
+                        onClick={() => resendEmail(r.id)}
+                      >
+                        Resend
+                      </button>
+                    )}
+                    <button
+                      className="row-btn danger"
+                      disabled={rowBusy === r.id}
+                      onClick={() => deleteRequest(r.id)}
+                    >
+                      Delete
+                    </button>
+                    {rowMsg?.id === r.id && (
+                      <span className={`row-msg ${rowMsg.ok ? 'ok' : 'err'}`}>{rowMsg.text}</span>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={3} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                <td colSpan={4} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
                   No requests yet
                 </td>
               </tr>
@@ -338,6 +428,12 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {previewUrl && (
+        <div className="preview-overlay" onClick={() => setPreviewUrl(null)}>
+          <img src={previewUrl} alt="Signature" />
+        </div>
+      )}
     </div>
   );
 }
