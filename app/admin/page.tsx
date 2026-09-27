@@ -141,8 +141,10 @@ export default function AdminPage() {
     <div className="wrap">
       <style>{`
         * { box-sizing: border-box; }
-        body { margin: 0; }
+        body { margin: 0; overflow-x: hidden; }
+        html { overflow-x: hidden; }
         .wrap {
+          overflow-x: hidden;
           max-width: 720px;
           margin: 0 auto;
           padding: 20px 16px 60px;
@@ -157,7 +159,15 @@ export default function AdminPage() {
           margin-bottom: 20px;
         }
         h1 { font-size: 22px; margin: 0; }
-        .user-email { font-size: 13px; color: #888; }
+        .user-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .user-email {
+          font-size: 13px;
+          color: #888;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 45vw;
+        }
         .signout-btn {
           padding: 6px 14px;
           font-size: 13px;
@@ -252,6 +262,7 @@ export default function AdminPage() {
         .settings-row { display: flex; gap: 8px; flex-wrap: wrap; }
         .settings-row input {
           flex: 1 1 200px;
+          min-width: 0;
           padding: 10px;
           font-size: 15px;
           border: 1px solid #ccc;
@@ -304,7 +315,7 @@ export default function AdminPage() {
 
       <div className="top-row">
         <Brand compact />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="user-info">
           <span className="user-email">{userEmail}</span>
           <button className="signout-btn" onClick={signOut}>Sign out</button>
         </div>
