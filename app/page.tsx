@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Brand from '@/components/Brand';
 
 export default function Home() {
   return (
@@ -9,10 +10,11 @@ export default function Home() {
         .wrap {
           max-width: 560px;
           margin: 0 auto;
-          padding: 80px 20px;
+          padding: 40px 20px 80px;
           font-family: system-ui, -apple-system, sans-serif;
           text-align: center;
         }
+        .brand-row { text-align: left; margin-bottom: 60px; }
         h1 { font-size: 28px; margin-bottom: 12px; }
         p { color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 32px; }
         a.cta {
@@ -26,6 +28,7 @@ export default function Home() {
           font-size: 16px;
         }
       `}</style>
+      <div className="brand-row"><Brand /></div>
       <h1>Collect a signature. Nothing else.</h1>
       <p>
         Send a link. They type their name and draw their signature. You get the image back —

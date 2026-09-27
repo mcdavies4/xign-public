@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   const { data, error } = await supabase
     .from('signature_requests')
-    .select('signer_name, status')
+    .select('signer_name, status, user_id')
     .eq('token', token)
     .single();
 
@@ -15,5 +15,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     return NextResponse.json({ error: 'Invalid or expired link' }, { status: 404 });
   }
 
-  return NextResponse.json(data);
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', data.user_id)
+    .single();
+
+  return NextResponse.json({
+    signer_name: data.signer_name,
+    status: data.status,
+    requested_by: profile?.display_name || null,
+  });
 }

@@ -14,7 +14,7 @@ export async function sendSigningLinkEmail(to: string, link: string, signerName?
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { error } = await resend.emails.send({
-    from: 'Signature request <notifications@songsnap.online>',
+    from: 'Signature request <onboarding@resend.dev>',
     to,
     subject: 'Your signature is requested',
     html: `

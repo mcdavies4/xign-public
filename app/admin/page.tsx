@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Brand from '@/components/Brand';
 
 type Req = {
   id: string;
@@ -26,6 +27,9 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [displayNameSaved, setDisplayNameSaved] = useState(false);
+  const [savingName, setSavingName] = useState(false);
 
   const load = async () => {
     const {
@@ -33,6 +37,13 @@ export default function AdminPage() {
     } = await supabase.auth.getUser();
     if (!user) return router.push('/login');
     setUserEmail(user.email || '');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .single();
+    setDisplayName(profile?.display_name || '');
 
     const { data, error } = await supabase
       .from('signature_requests')
@@ -45,6 +56,22 @@ export default function AdminPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const saveDisplayName = async () => {
+    setSavingName(true);
+    setDisplayNameSaved(false);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from('profiles')
+      .update({ display_name: displayName.trim() || null })
+      .eq('id', user.id);
+    setSavingName(false);
+    setDisplayNameSaved(true);
+    setTimeout(() => setDisplayNameSaved(false), 2000);
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -189,15 +216,57 @@ export default function AdminPage() {
         }
         .status-pill.signed { background: #e6f7e6; color: #1a7a1a; }
         .status-pill.pending { background: #fff4e0; color: #a35b00; }
+        .settings-box {
+          border: 1px solid #eee;
+          border-radius: 8px;
+          padding: 14px;
+          margin-bottom: 24px;
+        }
+        .settings-box label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+        .settings-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .settings-row input {
+          flex: 1 1 200px;
+          padding: 10px;
+          font-size: 15px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+        }
+        .settings-row button {
+          padding: 10px 16px;
+          border: 1px solid #111;
+          background: #fff;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .settings-hint { font-size: 12px; color: #999; margin-top: 6px; }
       `}</style>
 
       <div className="top-row">
-        <h1>Signature requests</h1>
+        <Brand compact />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="user-email">{userEmail}</span>
           <button className="signout-btn" onClick={signOut}>Sign out</button>
         </div>
       </div>
+
+      <div className="settings-box">
+        <label htmlFor="displayName">Your name or business, shown to people you request signatures from</label>
+        <div className="settings-row">
+          <input
+            id="displayName"
+            placeholder="e.g. Grad Haus, or your name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+          <button onClick={saveDisplayName} disabled={savingName}>
+            {savingName ? 'Saving...' : displayNameSaved ? 'Saved!' : 'Save'}
+          </button>
+        </div>
+        <p className="settings-hint">Shows on the signing page as "Requested by ...". Leave blank to hide it.</p>
+      </div>
+
+      <h1 style={{ fontSize: 18, color: '#555', margin: '0 0 12px' }}>Your signature requests</h1>
 
       <div className="form-row">
         <input

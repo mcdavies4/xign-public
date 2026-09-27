@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import SignaturePad from '@/components/SignaturePad';
+import Brand from '@/components/Brand';
 
 export default function SignPage() {
   const { token } = useParams<{ token: string }>();
   const [status, setStatus] = useState<'loading' | 'pending' | 'signed' | 'invalid'>('loading');
   const [signerName, setSignerName] = useState('');
   const [nameInput, setNameInput] = useState('');
+  const [requestedBy, setRequestedBy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +21,7 @@ export default function SignPage() {
       const data = await res.json();
       setSignerName(data.signer_name || '');
       setNameInput(data.signer_name || '');
+      setRequestedBy(data.requested_by || null);
       setStatus(data.status === 'signed' ? 'signed' : 'pending');
     })();
   }, [token]);
@@ -61,6 +64,16 @@ export default function SignPage() {
         font-size: 16px;
       }
       .locked-hint { color: #999; font-size: 14px; }
+      .brand-row { margin-bottom: 24px; }
+      .requested-by {
+        display: inline-block;
+        background: #f5f5f5;
+        color: #555;
+        font-size: 13px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        margin-bottom: 16px;
+      }
       .error-banner {
         background: #fdecea;
         color: #a30000;
@@ -110,6 +123,8 @@ export default function SignPage() {
     <>
       {styleTag}
       <div className="sign-wrap">
+        <div className="brand-row"><Brand compact /></div>
+        {requestedBy && <div className="requested-by">Requested by {requestedBy}</div>}
         <h1>Sign here</h1>
         <p className="hint">Enter your name, then draw your signature below.</p>
         <input

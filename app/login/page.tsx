@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Brand from '@/components/Brand';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -63,7 +64,9 @@ export default function LoginPage() {
         button:disabled { background: #999; cursor: not-allowed; }
         .error { color: #a30000; font-size: 14px; margin-top: 12px; }
         .sent { color: #1a7a1a; font-size: 15px; }
+        .brand-row { margin-bottom: 32px; display: flex; justify-content: center; }
       `}</style>
+      <div className="brand-row"><Brand /></div>
       <h1>Sign in</h1>
       {sent ? (
         <p className="sent">Check your email for a sign-in link.</p>
