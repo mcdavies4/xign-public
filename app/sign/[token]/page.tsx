@@ -13,6 +13,11 @@ export default function SignPage() {
   const [requestedBy, setRequestedBy] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSent, setReportSent] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -40,6 +45,24 @@ export default function SignPage() {
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error || 'Something went wrong. Please try again.');
+    }
+  };
+
+  const submitReport = async () => {
+    if (!reportReason.trim()) return;
+    setReportSending(true);
+    setReportError(null);
+    const res = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, reason: reportReason }),
+    });
+    setReportSending(false);
+    if (res.ok) {
+      setReportSent(true);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setReportError(data.error || 'Failed to send report');
     }
   };
 
@@ -92,6 +115,50 @@ export default function SignPage() {
         font-size: 18px;
         font-family: system-ui, -apple-system, sans-serif;
       }
+      .report-link {
+        display: block;
+        text-align: center;
+        margin-top: 32px;
+        font-size: 12px;
+        color: #bbb;
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        text-decoration: underline;
+      }
+      .report-box {
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        background: #fafafa;
+      }
+      .report-box textarea {
+        width: 100%;
+        min-height: 70px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+      }
+      .report-box .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .report-box button {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .report-box .send-btn { border: none; background: #a30000; color: #fff; }
+      .report-box .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+      .report-box .cancel-btn { border: 1px solid #ccc; background: #fff; }
+      .report-sent { text-align: center; font-size: 13px; color: #1a7a1a; margin-top: 16px; }
     `}</style>
   );
 
@@ -140,6 +207,33 @@ export default function SignPage() {
           <p className="locked-hint">Enter your name to unlock the signature pad.</p>
         )}
         {error && <p className="error-banner">{error}</p>}
+
+        {!showReport && !reportSent && (
+          <button className="report-link" onClick={() => setShowReport(true)}>
+            Something wrong with this request? Report it.
+          </button>
+        )}
+
+        {showReport && !reportSent && (
+          <div className="report-box">
+            <textarea
+              placeholder="What's wrong with this request?"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+            <div className="actions">
+              <button className="send-btn" onClick={submitReport} disabled={reportSending || !reportReason.trim()}>
+                {reportSending ? 'Sending...' : 'Send report'}
+              </button>
+              <button className="cancel-btn" onClick={() => setShowReport(false)}>
+                Cancel
+              </button>
+            </div>
+            {reportError && <p style={{ color: '#a30000', fontSize: 12, marginTop: 8 }}>{reportError}</p>}
+          </div>
+        )}
+
+        {reportSent && <p className="report-sent">Thanks — your report has been sent.</p>}
       </div>
     </>
   );

@@ -120,3 +120,35 @@ for the public, that's the main reason to eventually upgrade to Pro
 ($25/month) — not storage or bandwidth, which you're unlikely to hit at
 small scale with plain signature PNGs.
 
+**This is now handled automatically** — see "Keeping Supabase awake" below.
+
+## Keeping Supabase awake
+
+A Vercel Cron job hits `/api/keepalive` once a day (the max frequency
+allowed on Vercel's free Hobby tier), which runs a trivial database query —
+enough to count as activity and stop the 7-day auto-pause from ever
+triggering.
+
+Setup:
+1. Add `CRON_SECRET` to your env vars — any random string works, e.g.
+   generate one with `openssl rand -hex 32` or just mash the keyboard.
+   Add the same value in Vercel too.
+2. `vercel.json` (included) registers the daily schedule automatically on
+   deploy — no dashboard configuration needed.
+3. Confirm it's working: Vercel dashboard → your project → Cron Jobs tab,
+   should show `/api/keepalive` scheduled and its run history after the
+   first day.
+
+## Abuse reporting
+
+Signers see a small "Report this request" link at the bottom of the
+signing page. If used, it emails you directly with the token, which
+account requested it, and their stated reason — no dashboard or database
+table needed.
+
+Setup:
+1. Add `REPORT_EMAIL` to your env vars — the address that should receive
+   reports (e.g. your own email).
+2. Uses the same `RESEND_API_KEY` you already configured for signing-link
+   emails — no separate setup.
+
