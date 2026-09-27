@@ -16,7 +16,7 @@ export default function SignPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await fetch(`/api/signatures/${token}`);
+      const res = await fetch(`/api/sign/${token}`);
       if (!res.ok) return setStatus('invalid');
       const data = await res.json();
       setSignerName(data.signer_name || '');
