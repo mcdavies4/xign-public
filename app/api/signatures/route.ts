@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { sendSigningLinkEmail } from '@/lib/resend';
 
 const DAILY_LINK_LIMIT = 100; // per user, generous but prevents runaway abuse
 
@@ -97,8 +98,17 @@ export async function PUT(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL}/sign/${data.token}`;
+  let emailStatus: { skipped: boolean; error?: string | null } = { skipped: true };
+
+  if (signer_email) {
+    emailStatus = await sendSigningLinkEmail(signer_email, link, signer_name);
+  }
+
   return NextResponse.json({
     token: data.token,
-    link: `${process.env.NEXT_PUBLIC_SITE_URL}/sign/${data.token}`,
+    link,
+    emailSent: !emailStatus.skipped && !emailStatus.error,
+    emailError: emailStatus.error || null,
   });
 }

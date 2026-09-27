@@ -32,6 +32,11 @@ export default function Home() {
         no document to sign, no account for them to make.
       </p>
       <Link className="cta" href="/login">Get started</Link>
+      <p style={{ marginTop: 32, fontSize: 13 }}>
+        <Link href="/privacy" style={{ color: '#999' }}>Privacy</Link>
+        {' · '}
+        <Link href="/terms" style={{ color: '#999' }}>Terms</Link>
+      </p>
     </div>
   );
 }

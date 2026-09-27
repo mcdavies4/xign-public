@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Signature capture — public version
 
-## Getting Started
+Multi-tenant: anyone can sign up with their email, generate signing links, and
+only ever sees their own requests. No document, no PDF — just a captured
+signature image per link.
 
-First, run the development server:
+## What changed from the private version
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Real accounts**: email magic-link sign-in via Supabase Auth (no passwords).
+- **Data isolation**: every request row has a `user_id`; Row Level Security
+  ensures you can only ever read/write your own rows — enforced by the
+  database, not just app code.
+- **Public sign page is now API-mediated**: the `/sign/[token]` page no longer
+  queries Supabase directly (it has no permission to). It calls
+  `/api/signatures/[token]` (GET) and `/api/signatures` (POST), both of which
+  run server-side with a service-role key that can act on behalf of an
+  unauthenticated signer without exposing your database to the browser.
+- **Basic abuse guard**: each user is capped at 100 new links per rolling 24h
+  — generous for real use, cheap insurance against runaway scripts.
+- **A signed link can't be reused**: submitting a signature twice for the same
+  token is rejected once it's already marked "signed".
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Supabase project**
+   - Run `supabase-schema.sql` in the SQL Editor.
+   - In Authentication → Providers, confirm **Email** is enabled with
+     "Confirm email" and magic-link sign-in on (default).
+   - In Authentication → URL Configuration, add your site's `/auth/callback`
+     URL (e.g. `https://yourdomain.com/auth/callback`) to the redirect
+     allow-list — magic links are rejected otherwise.
+   - Copy from Settings → API: **Project URL**, **anon public key**, and the
+     **service_role key** (keep this one secret — never expose it client-side).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Install dependencies**
+   ```
+   npm install @supabase/ssr @supabase/supabase-js
+   ```
+   (You no longer need the old `@supabase/supabase-js`-only setup — `@supabase/ssr`
+   supersedes it for session handling across client/server/middleware.)
 
-## Learn More
+3. **Environment variables** (`.env.local`, and matching ones in Vercel):
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # no NEXT_PUBLIC_ prefix — server only
+   NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. **Files** — same paths as before, plus new ones:
+   ```
+   middleware.ts                          (replaces the old basic-auth version)
+   lib/supabase/client.ts
+   lib/supabase/server.ts
+   lib/supabase/admin.ts
+   app/page.tsx                           (new landing page)
+   app/login/page.tsx                     (new)
+   app/auth/callback/route.ts             (new)
+   app/admin/page.tsx                     (replaces old)
+   app/api/signatures/route.ts            (replaces old)
+   app/api/signatures/[token]/route.ts    (new)
+   app/sign/[token]/page.tsx              (replaces old)
+   components/SignaturePad.tsx            (unchanged)
+   ```
+   Delete `lib/supabase.ts` from the old version — it's replaced by the three
+   files under `lib/supabase/`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. **Test locally**
+   ```
+   npm run dev
+   ```
+   Visit `/`, click "Get started", sign in with your email, check your inbox
+   for the magic link, land on `/admin`, generate a link, open it in another
+   tab, sign it, confirm it shows up back on `/admin`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes on going further
 
-## Deploy on Vercel
+- **Rate limit is per-user, not per-IP** — someone could still create many
+  accounts to get around the 100/day cap. Fine for a free tool with low
+  abuse incentive; revisit if it ever gets popular.
+- **Storage cleanup** — old signature images aren't automatically deleted.
+  Fine at small scale; worth a periodic cleanup job later.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Email delivery (optional)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Automatic emails now send when you provide a signer's email — but only work
+for real recipients once you've verified a sending domain with Resend.
+Without one, Resend only lets you email your own account's address (useful
+for testing, not for real signers).
+
+1. Sign up at resend.com, get an API key.
+2. Add `RESEND_API_KEY` to your env vars (locally and in Vercel).
+3. `npm install resend`
+4. When you're ready to email real signers: Resend dashboard → Domains → add
+   and verify a domain you own, then update the `from` address in
+   `lib/resend.ts` to use it (e.g. `notifications@yourdomain.com`).
+
+Until a domain's verified, the link still always works via manual
+copy/paste from the dashboard — email is a convenience layer on top, not a
+requirement.
+
+## Legal pages
+
+`/privacy` and `/terms` are included and linked from the landing page. Read
+them over and adjust the wording (especially the contact section) to reflect
+your actual business details before treating this as production-ready for
+the public.
+
+## Supabase free tier — what actually matters here
+
+As of mid-2026, the free tier gives you 500 MB database, 1 GB file storage
+(signature images), 5 GB egress/month, 50,000 monthly active users, and 2
+active projects per organization.
+
+The one that will actually bite you first: **free projects pause after 7
+days of inactivity**. If nobody uses the tool for a week, it goes dark until
+someone manually un-pauses it from the Supabase dashboard — visitors would
+hit an error, not a graceful message. If you want this genuinely always-on
+for the public, that's the main reason to eventually upgrade to Pro
+($25/month) — not storage or bandwidth, which you're unlikely to hit at
+small scale with plain signature PNGs.
+

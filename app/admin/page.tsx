@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [newLink, setNewLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -66,6 +67,7 @@ export default function AdminPage() {
       return;
     }
     setNewLink(data.link);
+    setEmailSent(data.emailSent);
     setName('');
     setEmail('');
     load();
@@ -223,6 +225,7 @@ export default function AdminPage() {
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
+          {emailSent && <div style={{ marginTop: 6, fontSize: 13, color: '#1a7a1a' }}>Emailed to the signer.</div>}
         </div>
       )}
 
