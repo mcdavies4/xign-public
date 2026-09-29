@@ -22,8 +22,24 @@ export default function PrivacyPage() {
       <h2>What we collect</h2>
       <ul>
         <li>From the sender: an email address, used only for signing in.</li>
-        <li>From the signer: a name they type in, and the signature image they draw. An email address is only collected if the sender chose to provide one when generating the link.</li>
+        <li>From a signature request: a name they type in, and the signature image they draw. An email address is only collected if the sender chose to provide one when generating the link.</li>
+        <li>From an ID/document verification request: a full name, an optional phone number, a photo of the person, and a photo or scan of one ID document (such as a national ID, passport, or driver's license) they choose to provide.</li>
       </ul>
+
+      <h2>What we do not collect</h2>
+      <p>
+        We do not ask for or store Bank Verification Numbers (BVN), account numbers, or other
+        financial account credentials. If anyone asks you for your BVN through this service, do
+        not provide it — it is never a legitimate part of this process.
+      </p>
+
+      <h2>How ID documents are stored</h2>
+      <p>
+        Unlike signature images, uploaded ID documents and photos are stored in a private location
+        that is never publicly accessible. The sender who requested them can view them only
+        through temporary links that expire after a few minutes, and only while signed in to their
+        own account.
+      </p>
 
       <h2>How it's used</h2>
       <p>

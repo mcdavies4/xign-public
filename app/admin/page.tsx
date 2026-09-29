@@ -349,6 +349,7 @@ export default function AdminPage() {
       <div className="top-row">
         <Brand compact />
         <div className="user-info">
+          <a href="/admin/documents" style={{ fontSize: 13, color: '#666', marginRight: 4 }}>ID & documents →</a>
           <span className="user-email">{userEmail}</span>
           <button className="signout-btn" onClick={signOut}>Sign out</button>
         </div>

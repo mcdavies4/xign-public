@@ -28,3 +28,26 @@ export async function sendSigningLinkEmail(to: string, link: string, signerName?
   if (error) return { skipped: false, error: error.message };
   return { skipped: false, error: null };
 }
+
+export async function sendKycLinkEmail(to: string, link: string, name?: string) {
+  if (!process.env.RESEND_API_KEY) {
+    return { skipped: true };
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const { error } = await resend.emails.send({
+    from: 'Xign <onboarding@resend.dev>',
+    to,
+    subject: 'Please verify your identity',
+    html: `
+      <p>Hi${name ? ` ${name}` : ''},</p>
+      <p>You've been asked to provide a quick photo and a copy of an ID document to verify your identity. It only takes a minute.</p>
+      <p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">Verify now</a></p>
+      <p style="color:#888;font-size:13px;">Or copy this link: ${link}</p>
+    `,
+  });
+
+  if (error) return { skipped: false, error: error.message };
+  return { skipped: false, error: null };
+}
