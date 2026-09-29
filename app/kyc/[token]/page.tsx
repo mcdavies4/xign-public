@@ -30,7 +30,7 @@ export default function KycPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await fetch(`/api/kyc/${token}`);
+      const res = await fetch(`/api/kyc-lookup/${token}`);
       if (!res.ok) return setStatus('invalid');
       const data = await res.json();
       setFullName(data.full_name || '');
